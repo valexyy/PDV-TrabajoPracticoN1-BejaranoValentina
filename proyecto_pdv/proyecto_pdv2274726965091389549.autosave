@@ -1,0 +1,251 @@
+PinkBallGame game;
+
+void setup() {
+  size(800, 400);
+  game = new PinkBallGame();
+}
+
+void draw() {
+  game.update();
+  game.display();
+}
+
+void keyPressed() {
+  game.handleKeyPress();
+}
+
+void keyReleased() {
+  game.handleKeyRelease();
+}
+
+
+abstract class GameScreen {
+  abstract void display();
+}
+
+class StartScreen extends GameScreen {
+  void display() {
+    background(255);
+    fill(255, 192, 203);
+    textAlign(CENTER, CENTER);
+    textSize(48);
+    text("PINK BALL", width/2, height/2 - 50);
+    
+    textSize(24);
+    fill(0);
+    text("Presiona ESPACIO para comenzar", width/2, height/2 + 20);
+    text("Presiona Q para salir", width/2, height/2 + 50);
+  }
+}
+
+class GameScreen extends GameScreen {
+  void display() {
+    background(255);
+    
+    game.player.display();
+    game.obstacleManager.display();
+    
+    fill(0);
+    textAlign(LEFT);
+    textSize(20);
+    text("Puntuación: " + game.score, 20, 30);
+  }
+}
+
+class GameOverScreen extends GameScreen {
+  int finalScore;
+  
+  GameOverScreen(int score) {
+    this.finalScore = score;
+  }
+  
+  void display() {
+    background(255);
+    fill(255, 0, 0);
+    textAlign(CENTER, CENTER);
+    textSize(36);
+    text("GAME OVER", width/2, height/2 - 80);
+    
+    fill(0);
+    textSize(24);
+    text("Puntuación final: " + finalScore, width/2, height/2 - 30);
+    
+    textSize(20);
+    text("Presiona ESPACIO para reintentar", width/2, height/2 + 20);
+    text("Presiona Q para salir", width/2, height/2 + 50);
+  }
+}
+
+class PinkBall {
+  float x, y;
+  float velocityX, velocityY;
+  float size;
+  boolean onGround;
+  boolean moving;
+  
+  PinkBall() {
+    reset();
+  }
+  
+  void reset() {
+    x = 100;
+    y = height - 100;
+    velocityX = 0;
+    velocityY = 0;
+    size = 30;
+    onGround = true;
+    moving = false;
+  }
+  
+  void update() {
+    if (moving) {
+      velocityX = 3;
+    } else {
+      velocityX *= 0.9;
+    }
+    
+    velocityY += 0.8;
+    x += velocityX;
+    y += velocityY;
+    
+    if (y >= height - 100) {
+      y = height - 100;
+      velocityY = 0;
+      onGround = true;
+    }
+  }
+  
+  void display() {
+    fill(255, 192, 203);
+    noStroke();
+    ellipse(x, y, size, size);
+  }
+  
+  void moveRight() {
+    moving = true;
+  }
+  
+  void stop() {
+    velocityX = 0;
+  }
+  
+  void stopMoving() {
+    moving = false;
+  }
+  
+  void jump() {
+    if (onGround) {
+      velocityY = -12;
+      onGround = false;
+    }
+  }
+  
+  float getX() { return x; }
+  float getY() { return y; }
+  float getSize() { return size; }
+}
+
+class Obstacle {
+  float x, y;
+  float width, height;
+  int type;
+  
+  Obstacle(float x, int type) {
+    this.x = x;
+    this.type = type;
+    
+    if (type == 0) {
+      width = random(20, 40);
+      height = random(30, 60);
+    } else {
+      width = random(25, 45);
+      height = random(25, 45);
+    }
+    
+    y = height - 100 - this.height;
+  }
+  
+  void update() {
+    x -= 3;
+  }
+  
+  void display() {
+    fill(100, 100, 100);
+    noStroke();
+    
+    if (type == 0) {
+      rect(x, y, width, height);
+    } else {
+      triangle(x, y + height, x + width/2, y, x + width, y + height);
+    }
+  }
+  
+  boolean checkCollision(PinkBall ball) {
+    if (type == 0) {
+      return (ball.getX() + ball.getSize()/2 > x && 
+              ball.getX() - ball.getSize()/2 < x + width &&
+              ball.getY() + ball.getSize()/2 > y && 
+              ball.getY() - ball.getSize()/2 < y + height);
+    } else {
+      return (ball.getX() + ball.getSize()/2 > x && 
+              ball.getX() - ball.getSize()/2 < x + width &&
+              ball.getY() + ball.getSize()/2 > y);
+    }
+  }
+  
+  float getX() { return x; }
+  boolean isOffScreen() { return x + width < 0; }
+}
+
+class ObstacleManager {
+  ArrayList<Obstacle> obstacles;
+  int obstacleTimer;
+  int obstacleDelay;
+  
+  ObstacleManager() {
+    obstacles = new ArrayList<Obstacle>();
+    obstacleTimer = 0;
+    obstacleDelay = 120;
+  }
+  
+  void update() {
+    obstacleTimer++;
+    
+    if (obstacleTimer >= obstacleDelay) {
+      int type = (int)random(2);
+      obstacles.add(new Obstacle(width + 50, type));
+      obstacleTimer = 0;
+      obstacleDelay = (int)random(80, 150);
+    }
+    
+    for (int i = obstacles.size() - 1; i >= 0; i--) {
+      Obstacle obs = obstacles.get(i);
+      obs.update();
+      
+      if (obs.isOffScreen()) {
+        obstacles.remove(i);
+      }
+    }
+  }
+  
+  void display() {
+    for (Obstacle obs : obstacles) {
+      obs.display();
+    }
+  }
+  
+  boolean checkCollision(PinkBall ball) {
+    for (Obstacle obs : obstacles) {
+      if (obs.checkCollision(ball)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  void reset() {
+    obstacles.clear();
+    obstacleTimer = 0;
+    obstacleDelay = 120;
+  }
+}
