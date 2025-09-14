@@ -15,21 +15,41 @@ class ObstacleManager {
     obstacleTimer++;
     
     // Aumentar velocidad progresivamente
-    currentSpeed = 4.0 + (game.score * 0.001); // Velocidad aumenta con la puntuación
-    if (currentSpeed > 8.0) currentSpeed = 8.0; // Velocidad máxima
+    if (game.score < 7000) {
+      currentSpeed = 4.0 + (game.score * 0.001);
+      if (currentSpeed > 8.0) currentSpeed = 8.0;
+    } else {
+      // Después de 7000 puntos, velocidad más agresiva
+      currentSpeed = 8.0 + ((game.score - 7000) * 0.002);
+      if (currentSpeed > 12.0) currentSpeed = 12.0; // Velocidad máxima aumentada
+    }
     
-    // Calcular frecuencia de obstáculos basada en la velocidad
-    int obstacleFrequency = (int)(150 - (currentSpeed - 4.0) * 20); // De 150 a 70 frames
-    if (obstacleFrequency < 70) obstacleFrequency = 70; // Frecuencia mínima
+    // Calcular frecuencia de obstáculos basada en la velocidad y puntuación
+    int obstacleFrequency;
+    if (game.score < 600) {
+      obstacleFrequency = (int)(150 - (currentSpeed - 4.0) * 20);
+      if (obstacleFrequency < 70) obstacleFrequency = 70;
+    } else {
+      // Después de 600 puntos, más obstáculos
+      obstacleFrequency = (int)(120 - (currentSpeed - 4.0) * 25);
+      if (obstacleFrequency < 50) obstacleFrequency = 50; // Frecuencia mínima más agresiva
+    }
     
     // Generar obstáculo con frecuencia dinámica
     if (obstacleTimer >= obstacleFrequency) {
       int type = obstacleCounter % 2; // Alterna entre 0 y 1
       float newX = width + 100;
       
-      // Calcular distancia mínima basada en la velocidad
-      float minDistance = 200 + (currentSpeed - 4.0) * 30; // De 200 a 320 píxeles
-      if (minDistance > 320) minDistance = 320; // Distancia máxima
+      // Calcular distancia mínima basada en la velocidad y puntuación
+      float minDistance;
+      if (game.score < 600) {
+        minDistance = 200 + (currentSpeed - 4.0) * 30;
+        if (minDistance > 320) minDistance = 320;
+      } else {
+        // Después de 600 puntos, obstáculos más juntos
+        minDistance = 150 + (currentSpeed - 4.0) * 25;
+        if (minDistance > 280) minDistance = 280;
+      }
       
       // Verificar que no se superponga con obstáculos existentes
       boolean canPlace = true;
